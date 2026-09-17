@@ -1,7 +1,13 @@
 
-# Preparation contract: micsPlusTableR supplies hh_path and hl_path, makes its
-# declared imports available, and collects hh, hl, and extra-table objects.
-# Do not source external package or function bootstrap scripts from this file.
+# Preparation dependencies are checked by micsPlusTableR before data are read.
+# These dependencies install automatically with micsPlusTableR; no separate setup is needed.
+# micsPlusTableR supplies paths, makes these packages available to this script,
+# and collects hh, hl, and extra-table objects without a bootstrap script.
+prep_dependencies <- c(
+  "dplyr", "ggplot2", "haven", "here", "Hmisc",
+  "memisc", "reshape2", "RM.weights", "srvyr", "survey",
+  "tibble", "tidyr"
+)
 
 hh <- haven::read_sav(hh_path) 
 
