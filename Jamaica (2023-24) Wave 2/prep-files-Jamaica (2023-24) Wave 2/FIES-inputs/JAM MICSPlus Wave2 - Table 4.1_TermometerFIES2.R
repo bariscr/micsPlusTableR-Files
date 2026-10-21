@@ -35,7 +35,7 @@ TermometerFIES <- function(rr){
     annotate("text", x = 0, y = 0.5, label = "Respondent severity parameters") +
     annotate("text", x = rr$a, y = 0.475, label = round(rr$a, 1)) 
   
-  pdf("./Termometer.pdf", width = 10, height = 8)
+  pdf(file.path(path_fies_output, "Termometer.pdf"), width = 10, height = 8)
   print(tmp.plot)
   dev.off()
   tmp.plot

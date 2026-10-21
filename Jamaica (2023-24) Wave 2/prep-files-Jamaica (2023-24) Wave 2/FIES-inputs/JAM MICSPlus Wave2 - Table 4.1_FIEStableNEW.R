@@ -59,13 +59,13 @@ FIEStable <- function(data, fies.matrix, rr, disaggregation = NULL, adj.thres,
       colnames(fiesTable) <- c("Cas", "CasNonExtreme", colnames(fies.matrix), "IA_mod+grave", "EdM_mod+grave", "IA_grave","EdM_grave")
     }
 
+    pdf(file.path(path_fies_output, paste0("Equating_", disaggregation)))
     if (length(unique(data[, disaggregation]) == 2)) par(mfrow=c(1,2))
     if (length(unique(data[, disaggregation]) == 3)) par(mfrow=c(1,3))
     if (length(unique(data[, disaggregation]) == 4)) par(mfrow=c(2,2))
     if (length(unique(data[, disaggregation]) %in% c(5,6))) par(mfrow=c(2,3))
     if (length(unique(data[, disaggregation]) > 6)) par(mfrow=c(3,3))
 
-    pdf(paste0("Equating_", disaggregation))
     nsubregion <- 1
     
     res <- list()
@@ -76,7 +76,7 @@ FIEStable <- function(data, fies.matrix, rr, disaggregation = NULL, adj.thres,
       rs_tmp <- rowSums(tmp.df)
       print(colSums(tmp.df[which(!(rs_tmp == 0 | rs_tmp == 8)),], na.rm = TRUE))
       print(sum(data[, disaggregation] == subregion))
-      r = RM.w(fies.matrix[data[, disaggregation] == subregion &
+      r = fies_rm_w(output_dir = path_fies_output, fies.matrix[data[, disaggregation] == subregion &
                              !is.na(data[, disaggregation]),],
                weights[data[, disaggregation] == subregion&
                          !is.na(data[, disaggregation])],
@@ -121,7 +121,7 @@ FIEStable <- function(data, fies.matrix, rr, disaggregation = NULL, adj.thres,
 
       if (nsubregion %in% c(9, 18, 27, 36, 45)) {
         dev.off()
-        pdf(paste0("Equating_", disaggregation, "_", nsubregion/9))
+        pdf(file.path(path_fies_output, paste0("Equating_", disaggregation, "_", nsubregion/9)))
       }
       
       plot(rr$b, r$b/(sd(r$b)*sd(rr$b)), xlim=c(-4,4), ylim=c(-4,4),xlab="National", ylab=subregion)

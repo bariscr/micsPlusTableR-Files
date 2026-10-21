@@ -1,15 +1,50 @@
-#library(memisc)
-# Load only the tidyverse packages used by this script and its FIES helpers.
-library(dplyr)
-library(ggplot2)
-# Functions to simplify the analysis
-source(paste0(path_fies, "/JAM MICSPlus Wave1 - Table 4.1_moe_complex survey design_rev.R"))
-source(paste0(path_fies, "/JAM MICSPlus Wave1 - Table 4.1_TermometerFIES2.R"))
-source(paste0(path_fies, "/JAM MICSPlus Wave1 - Table 4.1_FIEStableNEW.R"))
-source(paste0(path_fies, "/JAM MICSPlus Wave1 - Table 4.1_fies4w29092021_REV.R"))
-#
+# ---- Standalone survey and paths ----
+# In the app, its selected paths and survey label are used automatically.
+country <- "JAM"
+wave <- 1
+output_prefix <- paste0(country, " MICSPlus Wave", wave)
+.fies_app_paths <- get0(".mics_fies_paths", envir = environment(), inherits = FALSE)
+if (is.null(.fies_app_paths)) {
+  path_fies <- NULL # NULL: this script's folder; or enter its full path
+  hh_path <- file.path("..", "..", paste0(country, "_W", wave, "_hh.sav"))
+  path_fies_output <- "../FIES-outputs"
+} else {
+  path_fies <- .fies_app_paths$inputs
+  hh_path <- .fies_app_paths$hh
+  path_fies_output <- .fies_app_paths$output
+  if (!is.null(.fies_app_paths$survey_label)) {
+    output_prefix <- .fies_app_paths$survey_label
+  }
+}
+# Relative data/output paths are resolved from path_fies, never by changing getwd().
+if (is.null(path_fies)) {
+  .source_files <- vapply(sys.frames(), function(frame) {
+    value <- frame$ofile
+    if (is.character(value) && length(value) == 1L) value else NA_character_
+  }, character(1))
+  .source_files <- .source_files[!is.na(.source_files)]
+  .script_file <- if (length(.source_files)) tail(.source_files, 1L) else
+    gsub("~+~", " ", sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), fixed = TRUE)
+  if (!length(.script_file)) {
+    stop("Source this script, run it with Rscript, or set path_fies to the helper folder.")
+  }
+  path_fies <- dirname(normalizePath(.script_file, mustWork = TRUE))
+}
+path_fies <- normalizePath(path_fies, winslash = "/", mustWork = TRUE)
+base::sys.source(file.path(path_fies, "FIES-runtime.R"), envir = environment())
+fies_load_dependencies(environment())
+.fies_paths <- fies_resolve_paths(path_fies, hh_path, path_fies_output)
+path_fies <- .fies_paths$inputs
+hh_path <- .fies_paths$hh
+path_fies_output <- .fies_paths$output
 
-#setwd("P:\\12. Tabulation Syntaxes\\Wave 1\\20241104_Revised_degubra")
+# Helper discovery uses stable suffixes, so changing the survey label does not
+# require renaming the supplied helpers or their reference-data file.
+for (.helper in c("moe_complex survey design_rev.R", "TermometerFIES2.R",
+                  "FIEStableNEW.R", "fies4w29092021_REV.R")) {
+  base::sys.source(fies_input_file(path_fies, .helper), envir = environment())
+}
+
 sav = memisc::spss.system.file(hh_path)
 hh <- as.data.frame(memisc::as.data.set(sav), use.value.labels=TRUE)
 rm(sav)
@@ -27,17 +62,16 @@ table(RS30D)
 apply(F30D, 2, table)
 apply(F30D, 2, function(i) sum(is.na(i))) #NA
 
-library(RM.weights)
-library(survey)
-source(paste0(path_fies, "/JAM MICSPlus Wave1 - Table 4.1_moe_complex survey design_rev.R"))
-load(paste0(path_fies, "/JAM MICSPlus Wave1 - Table 4.1_FIES_glob_st.RData"))
+load(fies_input_file(path_fies, "FIES_glob_st.RData"), envir = environment())
 colnames(F30D) <- names(fies.global.st)
 ### Checking items for infit values.
-res30D <- RM.w(as.matrix(F30D), write.file = T, country="JAM MICSPlus Wave1 - Table 4.1_unweighted")
+res30D <- fies_rm_w(output_dir = path_fies_output, as.matrix(F30D), write.file = T, country=paste0(output_prefix, "_unweighted"))
 cbind(res30D$infit)
-res30D_w <- RM.w(as.matrix(F30D),wgt, write.file = T, country="JAM MICSPlus Wave1 - Table 4.1_weighted")
+res30D_w <- fies_rm_w(output_dir = path_fies_output, as.matrix(F30D),wgt, write.file = T, country=paste0(output_prefix, "_weighted"))
+pdf(file.path(path_fies_output, paste0(output_prefix, "_Weighted comparison.pdf")))
 plot(res30D$b/sd(res30D$b),res30D_w$b/sd(res30D_w$b))
 abline(0,1)
+dev.off()
 ## preparing classifiers
 hh <- 
   hh %>% 
@@ -62,7 +96,7 @@ classifier[[4]] = hh$headage
 classifier[[5]] = hh$headed
 classifier[[6]] = hh$windex5
 
-png("JAM MICSPlus Wave1 - Table 4.1_Boxplots.png")
+png(file.path(path_fies_output, paste0(output_prefix, "_Boxplots.png")))
 par(mfrow=c(2,3))
 
 boxplot(RS30D~hh$area)
@@ -76,10 +110,10 @@ dev.off()
 
 test_res = list()
 for (case in levels(hh$windex5)) {
-  test_res[[case]] <- RM.w(F30D[hh$windex5 == case,])
+  test_res[[case]] <- fies_rm_w(output_dir = path_fies_output, F30D[hh$windex5 == case,])
 }
 
-pdf("JAM MICSPlus Wave1 - Table 4.1_DIF_by_wealth.pdf")
+pdf(file.path(path_fies_output, paste0(output_prefix, "_DIF_by_wealth.pdf")))
 plot(res30D$b/sd(res30D$b),test_res$Poorest$b/sd(test_res$Poorest$b), ylab="Sev by Income",
      xlab="Sev")
 points(res30D$b/sd(res30D$b),test_res$Second$b/sd(test_res$Second$b),col=2)
@@ -106,7 +140,7 @@ fies4w.df$wt.person=wgt
 write.csv(fies4w.df[, c("WORRIED", "HEALTHY", "FEWFOOD", "SKIPPED",
                         "ATELESS", "RUNOUT", "HUNGRY", "WHLDAY",
                         "wt", "wt.person", "area", "windex5", "id")],
-          "./JAM MICSPlus Wave1 - Table 4.1_Shiny 4w.csv", row.names = FALSE)
+          file.path(path_fies_output, paste0(output_prefix, "_Shiny 4w.csv")), row.names = FALSE)
 
 res.df <- fies4w(global.4w.common = c(1:3,6:8),
                  fies.df = fies4w.df[,1:8],
@@ -119,5 +153,5 @@ res.df <- fies4w(global.4w.common = c(1:3,6:8),
                  # uniqueitems = c("WORRIED", "HUNGRY"),
                  disaggregation.df = fies4w.df[, c('area', 'degubra', 'headsex', 
                                                    'headage', 'headed', 'windex5')],
-                 surveyName = "JAM MICSPlus Wave1 - Table 4.1_",
+                 surveyName = paste0(output_prefix, "_"),
                  FIEScatplot = TRUE)

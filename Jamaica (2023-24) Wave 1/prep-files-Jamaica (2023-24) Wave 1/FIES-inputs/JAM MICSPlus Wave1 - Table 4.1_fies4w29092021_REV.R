@@ -174,6 +174,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
   ## Equate the 4 weeks reference scale with the 12 months global reference
   ## scale
   #########################################################################
+  pdf(file.path(path_fies_output, paste0(surveyName, " Reference scale.pdf")))
   if (is.null(global.4w.common)) {
     plot(fies.global.st, FIES_ref)
     text(fies.global.st, FIES_ref, paste(1:8, names(fies.global.st)), cex = 0.6, pos = 4)
@@ -192,6 +193,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
        xlab = "Normalized fies.global.st", ylab = "FIES_ref")
   text(adj_fies, FIES_ref, paste(1:8,names(fies.global.st)), cex = 0.6, pos = 4)
   abline(0,1)
+  dev.off()
   
   #################################################
   ## Run the model and remove items with high infit
@@ -205,10 +207,10 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
                         sum(wt[!is.na(rowSums(fies.df)) & !rowSums(fies.df)==0]))
       par <- c(min((k-1)+.7, (k-1)+.5 + distr[k+1]))
       extr <- c(0.5, par)
-      res <- RM.w(fies.df, wt, .d = extr, write.file = TRUE, country = surveyName,
+      res <- fies_rm_w(output_dir = path_fies_output, fies.df, wt, .d = extr, write.file = TRUE, country = surveyName,
                   max.it = maxit.RM.w)
     } else {
-      res <- RM.w(fies.df, wt, write.file = TRUE, country = surveyName,
+      res <- fies_rm_w(output_dir = path_fies_output, fies.df, wt, write.file = TRUE, country = surveyName,
                   max.it = maxit.RM.w)
     }
     b <- res$b
@@ -219,7 +221,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
     if (all(unique(unlist(fies.df)) %in% c(0,1,NA))) {
       print("Polytomous model set by the user but only dichotomous values found in the dataset. The dichotomous module is used instead.")
       model <- "dichotomous"
-      res <- RM.w(fies.df, wt, write.file = TRUE, country = surveyName, 
+      res <- fies_rm_w(output_dir = path_fies_output, fies.df, wt, write.file = TRUE, country = surveyName, 
                   max.it = maxit.RM.w)
       b <- res$b
       names <- names(b)
@@ -227,14 +229,14 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
       se.b <- res$se.b
     } else {
       ## Polytomous model
-      res <- try(PC.w(fies.df, wt, write.file = TRUE, country = surveyName,
+      res <- try(fies_pc_w(output_dir = path_fies_output, fies.df, wt, write.file = TRUE, country = surveyName,
                   maxiter = maxit.PC.w, minconv=minconv.PC.w,recode=aggr.cat.PC.w),
                  silent=T)
       if(class(res)=="try-error"){
         warning("PC.w function could not reach convergence due to low number of 
                 Yes answers to the extreme categories. 
                 The function is re-run aggregating the categories Sometimes and Often.")
-        res <- PC.w(fies.df, wt, write.file = TRUE, country = surveyName,
+        res <- fies_pc_w(output_dir = path_fies_output, fies.df, wt, write.file = TRUE, country = surveyName,
                         maxiter = maxit.PC.w, minconv=minconv.PC.w,recode=1)
       }
       b <- res$b$X1
@@ -252,7 +254,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
         tmp.df <- fies.df
         tmp.df[tmp.df > 1 & !is.na(tmp.df)] <- 1
         
-        tmp <- RM.w(tmp.df, wt,max.it =  maxit.RM.w, write.file = T,country=surveyName)
+        tmp <- fies_rm_w(output_dir = path_fies_output, tmp.df, wt,max.it =  maxit.RM.w, write.file = T,country=surveyName)
         
         mpoly = mean(b)
         mdich = mean(tmp$b)
@@ -263,7 +265,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
         adj_b_poly = (b-mpoly)/spoly*s2+m2
         adj_b_dich = (tmp$b-mdich)/sdich*s2+m2
         
-        pdf(file = paste0(surveyName, "_dich vs poly_stability.pdf")) 
+        pdf(file = file.path(path_fies_output, paste0(surveyName, "_dich vs poly_stability.pdf"))) 
         plot(adj_b_dich, adj_b_poly, xlim = c(floor(min(c(adj_b_dich,adj_b_poly))), ceiling(max(c(adj_b_dich,adj_b_poly)))), 
              ylim = c(floor(min(c(adj_b_dich,adj_b_poly))), ceiling(max(c(adj_b_dich,adj_b_poly)))),
              xlab = "Dich item sev pars after equating", ylab = "Poly item sev pars after equating")
@@ -279,7 +281,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
                           "Poly_Item_Sev_Pars" = b,
                           "Adj_Dich_Item_Sev_Pars" = adj_b_dich,
                           "Adj_Poly_Item_Sev_Pars" = adj_b_poly)
-        write.csv(tmp, paste0(path_fies_output, "/", surveyName, "_Item severity pars.csv"), row.names = TRUE)
+        write.csv(tmp, file.path(path_fies_output, paste0(surveyName, "_Item severity pars.csv")), row.names = TRUE)
         
       }
     }
@@ -297,9 +299,9 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
                             sum(wt[!is.na(rowSums(fies.df[,-highInfitItems])) & !rowSums(fies.df[,-highInfitItems])==0]))
           par <- c(min((k-1)+.7, (k-1)+.5 + distr[k+1]))
           extr <- c(0.5, par)
-          res <- RM.w(fies.df[,-highInfitItems], wt, .d = extr, write.file = TRUE, country = surveyName)
+          res <- fies_rm_w(output_dir = path_fies_output, fies.df[,-highInfitItems], wt, .d = extr, write.file = TRUE, country = surveyName)
         } else {
-          res <- RM.w(fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName)
+          res <- fies_rm_w(output_dir = path_fies_output, fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName)
         }
         b <- res$b
         names <- names(b)
@@ -310,14 +312,14 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
           stop("Polytomous model set by the user but all the polytomous variables have been removed because of high infits. Select the dichotomous module and try again.")
         } else {
           ## Polytomous model
-          res <- try(PC.w(fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName,
+          res <- try(fies_pc_w(output_dir = path_fies_output, fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName,
                       maxiter = maxit.PC.w, minconv=minconv.PC.w,recode=aggr.cat.PC.w),
                      silent=T)
           if(class(res)=="try-error"){
             warning("PC.w function could not reach convergence due to low number of 
                 Yes answers to the extreme categories. 
                 The function is re-run aggregating the categories Sometimes and Often.")
-            res <- PC.w(fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName,
+            res <- fies_pc_w(output_dir = path_fies_output, fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName,
                         maxiter = maxit.PC.w, minconv=minconv.PC.w,recode=1)
           }
           b <- res$b$X1
@@ -395,7 +397,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
     }
     colnames(combs) <- c("Unique item 1", "Unique item 2", "Unique item 3",
                          "Corr. common items", "Selected")
-    write.csv(combs, paste0(surveyName, " CorrelationCommonItems.csv"), row.names = FALSE)
+    write.csv(combs, file.path(path_fies_output, paste0(surveyName, " CorrelationCommonItems.csv")), row.names = FALSE)
     
     uniqueItems <- na.omit(unique(as.character(combs[combs$Selected == 1 &
                                                        !is.na(combs$Selected),][, c(1,2,3)])))
@@ -413,7 +415,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
     adj_se.a = res$se.a/s1*s2
     adj_se.b = se.b/s1*s2
     
-    pdf(file = paste0(path_fies_output, "/", surveyName, " Equating plot.pdf")) 
+    pdf(file = file.path(path_fies_output, paste0(surveyName, " Equating plot.pdf"))) 
     plot(FIES_ref, adj_b, xlim = c(-2.2,2.2), ylim = c(-2.2,2.2))
     points(FIES_ref[!names(b) %in% uniqueItems], adj_b[!names(b) %in% uniqueItems], col = "black")
     points(FIES_ref[names(b) %in% uniqueItems], adj_b[names(b) %in% uniqueItems], col = "red")
@@ -434,7 +436,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
     adj_se.a = res$se.a/s1*s2
     adj_se.b = se.b/s1*s2
     
-    pdf(file = paste0(path_fies_output, "/", surveyName, " Equating plot.pdf")) 
+    pdf(file = file.path(path_fies_output, paste0(surveyName, " Equating plot.pdf"))) 
     plot(FIES_ref[-highInfitItems], adj_b, xlim = c(-2.2,2.2), ylim = c(-2.2,2.2))
     points(FIES_ref[-highInfitItems][!names(b) %in% uniqueItems], adj_b[!names(b) %in% uniqueItems], col = "black")
     points(FIES_ref[-highInfitItems][names(b) %in% uniqueItems], adj_b[names(b) %in% uniqueItems], col = "red")
@@ -478,7 +480,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
   data.df <- merge(data.df, prob_tab[, c("RS", "p_IPC5")], by.x = "RS_valid", by.y = "RS", all.x = TRUE)
   
   ## Export data.df
-  write.csv(data.df, paste0(path_fies_output, "/", surveyName, " Household Probabilities.csv"), row.names = FALSE)
+  write.csv(data.df, file.path(path_fies_output, paste0(surveyName, " Household Probabilities.csv")), row.names = FALSE)
   
   ## Define the weights to be used in the computation of the prevalence rates.
   ## If individual weigths are available, these are used, otherwise the household
@@ -563,7 +565,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
   colnames(results.df) <- c("Disaggregation", "N", "P_mod",	"P_sev", "P_IPC2+", "P_IPC3+", "P_IPC4+", "P_IPC5", 
                             "MoE P_mod", "MoE P_sev", "MoE P_IPC2+", "MoE P_IPC3+", "MoE P_IPC4+", "MoE P_IPC5",
                             "P_mod_MoE", "P_sev_MoE", "P_IPC2+_MoE", "P_IPC3+_MoE", "P_IPC4+_MoE", "P_IPC5_MoE")
-  write.csv(results.df, paste0(path_fies_output, "/", surveyName, " Prevalence rates.csv"), row.names = FALSE)
+  write.csv(results.df, file.path(path_fies_output, paste0(surveyName, " Prevalence rates.csv")), row.names = FALSE)
   
   #######################
   ## FIES categories plot
@@ -642,14 +644,14 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
       annotate("text", x = 2, y = xlimmin+0.75, label = "SDG monitoring process\nFIES-based recent\nfood insecurity") +
       annotate("text", x = -2, y = xlimmin+0.75, label = "IPC - Acute Food Insecurity\nFIES-based recent\nfood insecurity")
     
-    pdf(paste0(path_fies_output, "/", surveyName, " FIES categories plot.pdf"), width = 10, height = 5)
+    pdf(file.path(path_fies_output, paste0(surveyName, " FIES categories plot.pdf")), width = 10, height = 5)
     print(tmp.plot)
     dev.off()
     tmp.plot
   }
   
   ## Save equated parameters
-  save(adj_b, adj_se.b, adj_a, adj_se.a,file = paste0(path_fies_output, "/", surveyName, " Equated parameters.RData"))
+  save(adj_b, adj_se.b, adj_a, adj_se.a,file = file.path(path_fies_output, paste0(surveyName, " Equated parameters.RData")))
   
   ## Return some objects
   return(list(PrevalenceRates = results.df, 
