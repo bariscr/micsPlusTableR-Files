@@ -76,7 +76,7 @@ FIEStable <- function(data, fies.matrix, rr, disaggregation = NULL, adj.thres,
       rs_tmp <- rowSums(tmp.df)
       print(colSums(tmp.df[which(!(rs_tmp == 0 | rs_tmp == 8)),], na.rm = TRUE))
       print(sum(data[, disaggregation] == subregion))
-      r = fies_rm_w(output_dir = path_fies_output, fies.matrix[data[, disaggregation] == subregion &
+      r = RM.w(fies.matrix[data[, disaggregation] == subregion &
                              !is.na(data[, disaggregation]),],
                weights[data[, disaggregation] == subregion&
                          !is.na(data[, disaggregation])],

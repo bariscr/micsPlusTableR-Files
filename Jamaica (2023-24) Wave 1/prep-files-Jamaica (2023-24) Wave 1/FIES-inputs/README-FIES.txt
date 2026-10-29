@@ -1,32 +1,39 @@
 Running the FIES analysis
 
-Share this entire FIES-inputs folder, including FIES-runtime.R, the helper
-scripts and the reference RData file. micsPlusTableR is not required.
+Keep the main Script.R, the four original survey helper scripts, and the
+reference RData file together. No runtime file or micsPlusTableR installation
+is needed for standalone runs.
 
-1. Install the statistical dependencies once:
-   install.packages(c("memisc", "Hmisc", "survey", "RM.weights", "reshape2",
-                      "dplyr", "ggplot2"))
-2. Open the file ending in _Script.R. Set country and wave at the top for
-   standalone runs. These generate the report prefix and default data filename.
-   Adjust hh_path if your household data is stored elsewhere. path_fies defaults to this script's folder;
-   path_fies_output defaults to ../FIES-outputs and is created automatically.
-   Data and output paths may be absolute or relative to path_fies.
-   output_prefix is generated once and reused in report titles and filenames.
-   There is no configuration list or separate table setting.
-3. Run the whole script with R's source(), RStudio Source or Rscript.
-   Example: source("/full/path/to/FIES-inputs/JAM MICSPlus Wave1 - Table 4.1_Script.R")
-   To run selected lines instead, set path_fies explicitly.
+Standalone
+1. Open the micsPlusTableR-Files R project so here::here() resolves its root.
+2. Edit the explicit hh_path, path_fies, path_fies_output and output_prefix
+   settings at the top of JAM MICSPlus Wave1 - Table 4.1_Script.R if needed.
+   The source() and load() calls name the exact helper and reference files;
+   edit those filenames directly when using a different set of files.
+3. Put the helper files in FIES-inputs under the project root. The script
+   creates FIES-outputs beside it automatically if missing. Existing output
+   folders are kept. The script never changes working directory.
+4. Run with source(), Rscript, or selected lines in RStudio.
 
-In the app, its selected paths and survey label are used automatically.
-Code-only prepare_mics_data() calls supply paths; without an app survey label,
-output_prefix remains the label set in the script. No setwd() is used.
-The resulting hh and res.df objects remain available as before.
+The analysis uses ordinary RM.w() and PC.w() calls. RM.weights writes its own
+model reports to the current working directory. After all calculations and
+table output are finished, the final block moves the explicitly listed model
+report files into FIES-outputs. Other outputs use path_fies_output directly.
+Copies overwrite reports from earlier runs; originals are removed only after
+all copies succeed. If the working directory is already the output folder,
+the reports stay there. Edit report_files if you enable additional reports
+such as PC.w(..., write.iteration = TRUE).
 
-Calculations still assume the survey's existing variable names, response
-labels, weights and breakdowns. Changing paths or the report label does not
-adapt those statistical definitions to a different questionnaire.
+Packages load normally with library() or package::function(). Missing packages
+produce R's usual error; the scripts do not install packages.
+The analysis uses here, memisc, Hmisc, survey, RM.weights, reshape2, dplyr and ggplot2.
 
-Helper files are found by stable suffixes, independent of their survey prefix.
-Keep one version of each helper and reference file in this folder.
-FIES-runtime.R is generated from the package sources; it uses RM.weights but
-not micsPlusTableR.
+App
+run_fies_table() supplies the selected data, helper and output paths to the
+same main Script.R. The same final report-move block runs after the analysis.
+The app's working directory is unchanged.
+
+The main Script.R contains clearly labeled sections for settings, app paths,
+packages, exact helper files, data preparation, models, plots and prevalence.
+Calculations retain the survey's variable names, response labels, weights and
+breakdowns. Changing filenames or settings does not adapt the questionnaire.

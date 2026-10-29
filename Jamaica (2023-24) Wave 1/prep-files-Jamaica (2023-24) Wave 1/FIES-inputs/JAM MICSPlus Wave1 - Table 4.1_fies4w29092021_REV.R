@@ -207,10 +207,10 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
                         sum(wt[!is.na(rowSums(fies.df)) & !rowSums(fies.df)==0]))
       par <- c(min((k-1)+.7, (k-1)+.5 + distr[k+1]))
       extr <- c(0.5, par)
-      res <- fies_rm_w(output_dir = path_fies_output, fies.df, wt, .d = extr, write.file = TRUE, country = surveyName,
+      res <- RM.w(fies.df, wt, .d = extr, write.file = TRUE, country = surveyName,
                   max.it = maxit.RM.w)
     } else {
-      res <- fies_rm_w(output_dir = path_fies_output, fies.df, wt, write.file = TRUE, country = surveyName,
+      res <- RM.w(fies.df, wt, write.file = TRUE, country = surveyName,
                   max.it = maxit.RM.w)
     }
     b <- res$b
@@ -221,7 +221,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
     if (all(unique(unlist(fies.df)) %in% c(0,1,NA))) {
       print("Polytomous model set by the user but only dichotomous values found in the dataset. The dichotomous module is used instead.")
       model <- "dichotomous"
-      res <- fies_rm_w(output_dir = path_fies_output, fies.df, wt, write.file = TRUE, country = surveyName, 
+      res <- RM.w(fies.df, wt, write.file = TRUE, country = surveyName, 
                   max.it = maxit.RM.w)
       b <- res$b
       names <- names(b)
@@ -229,14 +229,14 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
       se.b <- res$se.b
     } else {
       ## Polytomous model
-      res <- try(fies_pc_w(output_dir = path_fies_output, fies.df, wt, write.file = TRUE, country = surveyName,
+      res <- try(PC.w(fies.df, wt, write.file = TRUE, country = surveyName,
                   maxiter = maxit.PC.w, minconv=minconv.PC.w,recode=aggr.cat.PC.w),
                  silent=T)
       if(class(res)=="try-error"){
         warning("PC.w function could not reach convergence due to low number of 
                 Yes answers to the extreme categories. 
                 The function is re-run aggregating the categories Sometimes and Often.")
-        res <- fies_pc_w(output_dir = path_fies_output, fies.df, wt, write.file = TRUE, country = surveyName,
+        res <- PC.w(fies.df, wt, write.file = TRUE, country = surveyName,
                         maxiter = maxit.PC.w, minconv=minconv.PC.w,recode=1)
       }
       b <- res$b$X1
@@ -254,7 +254,7 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
         tmp.df <- fies.df
         tmp.df[tmp.df > 1 & !is.na(tmp.df)] <- 1
         
-        tmp <- fies_rm_w(output_dir = path_fies_output, tmp.df, wt,max.it =  maxit.RM.w, write.file = T,country=surveyName)
+        tmp <- RM.w(tmp.df, wt,max.it =  maxit.RM.w, write.file = T,country=surveyName)
         
         mpoly = mean(b)
         mdich = mean(tmp$b)
@@ -299,9 +299,9 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
                             sum(wt[!is.na(rowSums(fies.df[,-highInfitItems])) & !rowSums(fies.df[,-highInfitItems])==0]))
           par <- c(min((k-1)+.7, (k-1)+.5 + distr[k+1]))
           extr <- c(0.5, par)
-          res <- fies_rm_w(output_dir = path_fies_output, fies.df[,-highInfitItems], wt, .d = extr, write.file = TRUE, country = surveyName)
+          res <- RM.w(fies.df[,-highInfitItems], wt, .d = extr, write.file = TRUE, country = surveyName)
         } else {
-          res <- fies_rm_w(output_dir = path_fies_output, fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName)
+          res <- RM.w(fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName)
         }
         b <- res$b
         names <- names(b)
@@ -312,14 +312,14 @@ fies4w <- function(fies.global.st = c(-1.2230564, -0.847121, -1.1056616, 0.35098
           stop("Polytomous model set by the user but all the polytomous variables have been removed because of high infits. Select the dichotomous module and try again.")
         } else {
           ## Polytomous model
-          res <- try(fies_pc_w(output_dir = path_fies_output, fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName,
+          res <- try(PC.w(fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName,
                       maxiter = maxit.PC.w, minconv=minconv.PC.w,recode=aggr.cat.PC.w),
                      silent=T)
           if(class(res)=="try-error"){
             warning("PC.w function could not reach convergence due to low number of 
                 Yes answers to the extreme categories. 
                 The function is re-run aggregating the categories Sometimes and Often.")
-            res <- fies_pc_w(output_dir = path_fies_output, fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName,
+            res <- PC.w(fies.df[,-highInfitItems], wt, write.file = TRUE, country = surveyName,
                         maxiter = maxit.PC.w, minconv=minconv.PC.w,recode=1)
           }
           b <- res$b$X1
