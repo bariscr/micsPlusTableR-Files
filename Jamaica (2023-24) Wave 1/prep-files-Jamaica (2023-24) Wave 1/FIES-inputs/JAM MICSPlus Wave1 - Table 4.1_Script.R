@@ -163,6 +163,64 @@ res.df <- fies4w(
   FIEScatplot = TRUE
 )
 
+# ---- 10. Standardized table output for the app ----
+fies_result <- local({
+  groups <- c(
+    "area", "degubra", "headsex", "headage", "headed", "windex5"
+  )
+
+  rates <- res.df$PrevalenceRates
+
+  # Eligible households and their household-member counts.
+  valid <- complete.cases(F30D)
+  members <- as.numeric(hh$HLnum)
+  member_weights <- as.numeric(hh$hhweightHLnum)
+
+  if (nrow(hh) != nrow(F30D)) {
+    stop("Household records and FIES responses are not aligned.")
+  }
+
+  if (any(!is.finite(members[valid])) ||
+    any(!is.finite(member_weights[valid]))) {
+    stop("Eligible households have missing or invalid member counts/weights.")
+  }
+
+  # FIES output contains section headings followed by category rows.
+  current_group <- "Total"
+  output <- list()
+
+  for (i in seq_len(nrow(rates))) {
+    category <- trimws(as.character(rates$Disaggregation[i]))
+
+    if (category %in% groups) {
+      current_group <- category
+      next
+    }
+
+    selected <- valid
+
+    if (current_group != "Total") {
+      labels <- trimws(as.character(hh[[current_group]]))
+      labels[is.na(labels)] <- "Missing"
+      selected <- valid & labels == category
+    }
+
+    output[[length(output) + 1L]] <- data.frame(
+      group = current_group,
+      category = category,
+      p_mod = as.numeric(as.character(rates$P_mod[i])),
+      p_sev = as.numeric(as.character(rates$P_sev[i])),
+      count_w = sum(member_weights[selected]),
+      count_unw = sum(members[selected]),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  result <- do.call(rbind, output)
+  rownames(result) <- NULL
+  result
+})
+
 # ---- Final step: move the reports written by RM.weights ----
 # These are the exact model-report names used above and inside fies4w().
 # Edit this list if you enable additional model reports.

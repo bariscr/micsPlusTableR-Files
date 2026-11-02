@@ -37,3 +37,9 @@ The main Script.R contains clearly labeled sections for settings, app paths,
 packages, exact helper files, data preparation, models, plots and prevalence.
 Calculations retain the survey's variable names, response labels, weights and
 breakdowns. Changing filenames or settings does not adapt the questionnaire.
+
+The main script also returns fies_result with group/category labels,
+moderate-or-severe and severe prevalence proportions, and weighted and
+unweighted household-member counts for complete FIES responses.
+In the plan's Preparation File, tb_41 <- run_fies_table() creates the
+registered extra table without replacing the prepared hh or hl datasets.
